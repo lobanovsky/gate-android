@@ -1,5 +1,8 @@
 package ru.housekpr.gate.services
 
+import android.util.Log
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.serializer
@@ -35,6 +38,10 @@ class OkHttpGateApi(
         .readTimeout(20, TimeUnit.SECONDS)
         .build()
 ) : GateApi {
+
+    private companion object {
+        const val TAG = "GateApi"
+    }
 
     override suspend fun login(credentials: Credentials): UserSession {
         return request<Credentials, UserSession>(
@@ -97,6 +104,7 @@ class OkHttpGateApi(
         privateAuthorized: Boolean
     ): ResponseBody {
         val url = "${AppConfiguration.backendBaseUrl}${path}"
+        Log.d(TAG, "Request $method $url")
         val requestBuilder = Request.Builder()
             .url(url)
             .header("Accept", "application/json")
@@ -116,35 +124,44 @@ class OkHttpGateApi(
         val request = requestBuilder.method(method, requestBody).build()
 
         try {
-            client.newCall(request).execute().use { response ->
-                val rawBody = response.body?.string().orEmpty()
-                when {
-                    response.isSuccessful -> {
-                        if (ResponseBody::class == Unit::class) {
-                            @Suppress("UNCHECKED_CAST")
-                            return Unit as ResponseBody
+            return withContext(Dispatchers.IO) {
+                client.newCall(request).execute().use { response ->
+                    val rawBody = response.body?.string().orEmpty()
+                    Log.d(TAG, "Response ${response.code} for $method $url")
+                    when {
+                        response.isSuccessful -> {
+                            if (ResponseBody::class == Unit::class) {
+                                @Suppress("UNCHECKED_CAST")
+                                Unit as ResponseBody
+                            } else {
+                                if (rawBody.isBlank()) {
+                                    throw ApiError.InvalidResponse
+                                }
+                                json.decodeFromString(rawBody)
+                            }
                         }
-                        if (rawBody.isBlank()) {
-                            throw ApiError.InvalidResponse
+
+                        response.code == 401 || response.code == 403 -> {
+                            Log.w(TAG, "Auth error ${response.code} for $url: $rawBody")
+                            if (privateAuthorized) throw ApiError.Unauthorized
+                            throw ApiError.ServerError(extractErrorMessage(rawBody, response.code))
                         }
-                        return json.decodeFromString(rawBody)
-                    }
 
-                    response.code == 401 || response.code == 403 -> {
-                        if (privateAuthorized) throw ApiError.Unauthorized
-                        throw ApiError.ServerError(extractErrorMessage(rawBody, response.code))
-                    }
-
-                    else -> {
-                        throw ApiError.ServerError(extractErrorMessage(rawBody, response.code))
+                        else -> {
+                            Log.w(TAG, "Server error ${response.code} for $url: $rawBody")
+                            throw ApiError.ServerError(extractErrorMessage(rawBody, response.code))
+                        }
                     }
                 }
             }
         } catch (error: ApiError) {
+            Log.e(TAG, "API error for $method $url", error)
             throw error
         } catch (error: IOException) {
+            Log.e(TAG, "Transport error for $method $url", error)
             throw ApiError.Transport(error.localizedMessage ?: "Network error")
         } catch (error: Exception) {
+            Log.e(TAG, "Unexpected error for $method $url", error)
             throw ApiError.Transport(error.localizedMessage ?: "Unknown error")
         }
     }

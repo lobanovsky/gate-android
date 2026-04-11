@@ -64,7 +64,7 @@ object GateLayoutBuilder {
             GateArea.COURTYARD -> listOf("двор", "террит", "шлагбаум")
             GateArea.PARKING -> listOf("паркинг", "гараж", "ворота")
         }
-        return keywords.sumOf { if (name.contains(it)) 1 else 0 }
+        return keywords.count { name.contains(it) }
     }
 
     private fun firstMatchingDevice(devices: List<Device>, keywords: List<String>): Device? {

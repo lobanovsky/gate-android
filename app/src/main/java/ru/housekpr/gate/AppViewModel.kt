@@ -1,6 +1,7 @@
 package ru.housekpr.gate
 
 import android.content.Intent
+import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
@@ -27,6 +28,7 @@ import ru.housekpr.gate.services.BiometricSupport
 import ru.housekpr.gate.services.GateApi
 import ru.housekpr.gate.services.GateLayoutBuilder
 import ru.housekpr.gate.services.SecureStorage
+import ru.housekpr.gate.services.StorageError
 import kotlinx.coroutines.delay
 
 data class AppUiState(
@@ -59,10 +61,18 @@ class AppViewModel(
 
     fun bootstrap() {
         if (session != null) return
-        storage.loadSession()?.let { savedSession ->
-            session = savedSession
-            _state.update { it.copy(isAuthenticated = true) }
-            loadDevices()
+        runCatching {
+            storage.loadSession()
+        }.onSuccess { savedSession ->
+            savedSession?.let {
+                Log.d(TAG, "Bootstrap restored saved session")
+                session = it
+                _state.update { state -> state.copy(isAuthenticated = true) }
+                loadDevices()
+            }
+        }.onFailure { error ->
+            Log.e(TAG, "Bootstrap failed while reading stored session", error)
+            present(error, "Не удалось восстановить сессию")
         }
     }
 
@@ -70,13 +80,23 @@ class AppViewModel(
         if (email.isBlank() || password.isBlank()) return
         launchBusy {
             runCatching {
+                Log.d(TAG, "Login started for ${email.trim()}")
                 api.login(Credentials(email.trim(), password))
             }.onSuccess { userSession ->
-                applySession(userSession)
-                storage.saveCredentials(Credentials(email.trim(), password))
-                refreshBiometricOption()
-                loadDevices()
+                Log.d(TAG, "Backend login succeeded for ${email.trim()}")
+                runCatching {
+                    applySession(userSession)
+                    Log.d(TAG, "Session persisted successfully")
+                    storage.saveCredentials(Credentials(email.trim(), password))
+                    Log.d(TAG, "Credentials persisted successfully")
+                    refreshBiometricOption()
+                    loadDevices()
+                }.onFailure { error ->
+                    Log.e(TAG, "Login post-processing failed", error)
+                    present(error, "Не удалось завершить вход")
+                }
             }.onFailure { error ->
+                Log.e(TAG, "Login failed before session persistence", error)
                 present(error, "Не удалось войти")
             }
         }
@@ -123,26 +143,25 @@ class AppViewModel(
     }
 
     fun loginWithStoredCredentials() {
-        val credentials = storage.loadCredentials()
-        if (credentials == null) {
-            refreshBiometricOption()
-            _state.update {
-                it.copy(
-                    alert = AppAlert(
-                        "Не удалось войти по биометрии",
-                        "Не удалось получить сохранённые данные для входа."
-                    )
-                )
+        val credentials = runCatching { storage.loadCredentials() }
+            .onFailure { error ->
+                Log.e(TAG, "Biometric login failed while loading saved credentials", error)
+                present(error, "Не удалось войти по биометрии")
+                refreshBiometricOption()
             }
-            return
-        }
+            .getOrNull() ?: return
 
         launchBusy {
             runCatching {
                 api.login(credentials)
             }.onSuccess { userSession ->
-                applySession(userSession)
-                loadDevices()
+                runCatching {
+                    applySession(userSession)
+                    loadDevices()
+                }.onFailure { error ->
+                    Log.e(TAG, "Biometric login post-processing failed", error)
+                    present(error, "Не удалось завершить вход")
+                }
             }.onFailure { error ->
                 present(error, "Не удалось войти")
             }
@@ -323,12 +342,18 @@ class AppViewModel(
     }
 
     private fun present(error: Throwable, title: String) {
+        Log.e(
+            TAG,
+            "Presenting error. title=$title type=${error::class.java.name} message=${error.message} cause=${error.cause?.message}",
+            error
+        )
         val message = when (error) {
             is ApiError.InvalidBaseUrl -> "Некорректный URL backend."
             is ApiError.InvalidResponse -> "Сервер вернул неожиданный ответ."
             is ApiError.Unauthorized -> "Сессия истекла. Выполните вход повторно."
             is ApiError.ServerError -> error.details
             is ApiError.Transport -> error.details
+            is StorageError -> error.message ?: "Ошибка защищённого хранилища."
             else -> error.localizedMessage ?: "Неизвестная ошибка"
         }
         _state.update {
@@ -348,6 +373,8 @@ class AppViewModel(
     }
 
     companion object {
+        private const val TAG = "AppViewModel"
+
         fun factory(dependencies: AppDependencies): ViewModelProvider.Factory {
             return object : ViewModelProvider.Factory {
                 @Suppress("UNCHECKED_CAST")

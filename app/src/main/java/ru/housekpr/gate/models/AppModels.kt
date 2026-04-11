@@ -108,6 +108,7 @@ data class GateActionId(
             GateArea.COURTYARD to GateDirection.EXIT -> "+7-903-775-86-56"
             GateArea.PARKING to GateDirection.ENTER -> "+7-926-704-96-48"
             GateArea.PARKING to GateDirection.EXIT -> "+7-926-704-97-09"
+            else -> ""
         }
 
     fun dialUri(): Uri = Uri.parse("tel:${normalizePhone(phoneNumber)}")
