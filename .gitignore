@@ -1,0 +1,36 @@
+# Gradle
+.gradle/
+build/
+**/build/
+
+# Local SDK / machine-specific config
+local.properties
+
+# Android Studio / IntelliJ
+.idea/caches/
+.idea/libraries/
+.idea/modules.xml
+.idea/workspace.xml
+.idea/navEditor.xml
+.idea/assetWizardSettings.xml
+.idea/deploymentTargetSelector.xml
+
+# Editor / OS files
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+
+# Signing / secrets
+*.jks
+*.keystore
+keystore.properties
+google-services.json
+
+# Android generated assets
+captures/
+*.apk
+*.aab
+*.ap_
+output-metadata.json
