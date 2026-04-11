@@ -63,3 +63,19 @@ buildConfigField("String", "BACKEND_HOST", "\"gate-backend.housekpr.ru\"")
 - извлечения server error message из API-ответов
 
 Полная сборка не была прогнана в этой среде автоматически: sandbox блокирует Gradle daemon sockets и сетевой доступ для разрешения зависимостей.
+
+## Release и публикация
+
+Для release-подписи используется локальный файл `keystore.properties`, который не должен попадать в git. Возьмите шаблон из `keystore.properties.example` и заполните его параметрами production keystore.
+
+Основные команды:
+
+```bash
+./gradlew assembleRelease
+./gradlew bundleRelease
+```
+
+Материалы для публикации в RuStore:
+
+- [RuStoreReleaseChecklist.md](/Users/evgeny/Projects/android/gate/docs/RuStoreReleaseChecklist.md)
+- [RuStoreMetadataTemplate.md](/Users/evgeny/Projects/android/gate/docs/RuStoreMetadataTemplate.md)
