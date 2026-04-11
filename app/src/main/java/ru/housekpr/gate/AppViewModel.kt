@@ -279,6 +279,17 @@ class AppViewModel(
         }
     }
 
+    fun onLinkOpenFailure() {
+        _state.update {
+            it.copy(
+                alert = AppAlert(
+                    "Не удалось открыть ссылку",
+                    "Проверьте, доступен ли браузер на этом устройстве."
+                )
+            )
+        }
+    }
+
     fun dismissAlert() {
         _state.update { it.copy(alert = null) }
     }

@@ -2,6 +2,7 @@ package ru.housekpr.gate.ui
 
 import android.content.ActivityNotFoundException
 import android.content.Intent
+import android.net.Uri
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -14,12 +15,17 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.interaction.collectIsPressedAsState
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Call
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
@@ -35,6 +41,7 @@ import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -47,6 +54,7 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.unit.sp
 import androidx.compose.ui.unit.dp
 import ru.housekpr.gate.AppUiState
 import ru.housekpr.gate.models.GateArea
@@ -73,7 +81,8 @@ fun GateApp(
     buttonTitle: (GateArea, GateDirection) -> String,
     isActionDisabled: (GateArea, GateDirection, Boolean) -> Boolean,
     isActionInProgress: (GateArea, GateDirection) -> Boolean,
-    onDialFailure: () -> Unit
+    onDialFailure: () -> Unit,
+    onLinkOpenFailure: () -> Unit
 ) {
     val context = LocalContext.current
 
@@ -104,6 +113,20 @@ fun GateApp(
                 }.onFailure {
                     if (it is ActivityNotFoundException) {
                         onDialFailure()
+                    }
+                }
+            },
+            onOpenStudioLink = {
+                runCatching {
+                    context.startActivity(
+                        Intent(
+                            Intent.ACTION_VIEW,
+                            Uri.parse("https://www.lobanovsky.ru")
+                        )
+                    )
+                }.onFailure {
+                    if (it is ActivityNotFoundException) {
+                        onLinkOpenFailure()
                     }
                 }
             },
@@ -291,6 +314,7 @@ private fun GatesScreen(
     isActionDisabled: (GateArea, GateDirection, Boolean) -> Boolean,
     isActionInProgress: (GateArea, GateDirection) -> Boolean,
     onDial: (GateArea, GateDirection) -> Unit,
+    onOpenStudioLink: () -> Unit,
     onLogout: () -> Unit
 ) {
     Scaffold(
@@ -300,10 +324,12 @@ private fun GatesScreen(
                     containerColor = Color.Transparent
                 ),
                 title = {
-                    Text(
-                        "Сделано в Бюро Лобановского",
-                        style = MaterialTheme.typography.labelMedium
-                    )
+                    TextButton(onClick = onOpenStudioLink) {
+                        Text(
+                            "Сделано в Бюро Лобановского",
+                            style = MaterialTheme.typography.labelMedium
+                        )
+                    }
                 },
                 navigationIcon = {
                     TextButton(onClick = onLogout) {
@@ -411,24 +437,33 @@ private fun GateActionRow(
     onDial: () -> Unit,
     onOpen: () -> Unit
 ) {
+    val actionInteractionSource = remember { MutableInteractionSource() }
+    val isPressed by actionInteractionSource.collectIsPressedAsState()
+    val activeFill = Color(0xFFF5BA69)
+
     Row(horizontalArrangement = Arrangement.spacedBy(14.dp)) {
         Button(
             onClick = onDial,
             modifier = Modifier.size(88.dp),
             shape = RoundedCornerShape(22.dp),
-            colors = androidx.compose.material3.ButtonDefaults.buttonColors(containerColor = fill)
+            colors = ButtonDefaults.buttonColors(containerColor = fill)
         ) {
-            Text("☎", color = Color.White)
+            androidx.compose.material3.Icon(
+                imageVector = Icons.Filled.Call,
+                contentDescription = "Позвонить",
+                tint = Color.White
+            )
         }
         Button(
             onClick = onOpen,
             enabled = enabled,
+            interactionSource = actionInteractionSource,
             modifier = Modifier
                 .weight(1f)
                 .height(88.dp),
             shape = RoundedCornerShape(22.dp),
-            colors = androidx.compose.material3.ButtonDefaults.buttonColors(
-                containerColor = if (loading) Color(0xFFF5BA69) else fill,
+            colors = ButtonDefaults.buttonColors(
+                containerColor = if (loading || isPressed) activeFill else fill,
                 disabledContainerColor = fill.copy(alpha = 0.55f)
             )
         ) {
@@ -437,7 +472,12 @@ private fun GateActionRow(
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                Text(title, color = Color.White, fontWeight = FontWeight.Bold)
+                Text(
+                    title,
+                    color = Color.White,
+                    fontWeight = FontWeight.Bold,
+                    fontSize = 32.sp
+                )
                 if (loading) {
                     CircularProgressIndicator(
                         modifier = Modifier.size(24.dp),
