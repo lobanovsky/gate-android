@@ -83,6 +83,7 @@ fun GateApp(
     buttonTitle: (GateArea, GateDirection) -> String,
     isActionDisabled: (GateArea, GateDirection, Boolean) -> Boolean,
     isActionInProgress: (GateArea, GateDirection) -> Boolean,
+    isActionWaiting: (GateArea, GateDirection) -> Boolean,
     onDialFailure: () -> Unit,
     onLinkOpenFailure: () -> Unit
 ) {
@@ -109,6 +110,7 @@ fun GateApp(
             buttonTitle = buttonTitle,
             isActionDisabled = isActionDisabled,
             isActionInProgress = isActionInProgress,
+            isActionWaiting = isActionWaiting,
             onDial = { area, direction ->
                 runCatching {
                     context.startActivity(onDial(area, direction))
@@ -315,6 +317,7 @@ private fun GatesScreen(
     buttonTitle: (GateArea, GateDirection) -> String,
     isActionDisabled: (GateArea, GateDirection, Boolean) -> Boolean,
     isActionInProgress: (GateArea, GateDirection) -> Boolean,
+    isActionWaiting: (GateArea, GateDirection) -> Boolean,
     onDial: (GateArea, GateDirection) -> Unit,
     onOpenStudioLink: () -> Unit,
     onLogout: () -> Unit
@@ -383,6 +386,8 @@ private fun GatesScreen(
                                 exitEnabled = !isActionDisabled(section.area, GateDirection.EXIT, section.actions[GateDirection.EXIT] != null),
                                 enterLoading = isActionInProgress(section.area, GateDirection.ENTER),
                                 exitLoading = isActionInProgress(section.area, GateDirection.EXIT),
+                                enterWaiting = isActionWaiting(section.area, GateDirection.ENTER),
+                                exitWaiting = isActionWaiting(section.area, GateDirection.EXIT),
                                 onEnterDial = { onDial(section.area, GateDirection.ENTER) },
                                 onExitDial = { onDial(section.area, GateDirection.EXIT) },
                                 onEnterOpen = { onOpenGate(section.area, GateDirection.ENTER) },
@@ -405,6 +410,8 @@ private fun GateSectionCard(
     exitEnabled: Boolean,
     enterLoading: Boolean,
     exitLoading: Boolean,
+    enterWaiting: Boolean,
+    exitWaiting: Boolean,
     onEnterDial: () -> Unit,
     onExitDial: () -> Unit,
     onEnterOpen: () -> Unit,
@@ -426,6 +433,7 @@ private fun GateSectionCard(
                 title = enterTitle,
                 enabled = enterEnabled,
                 loading = enterLoading,
+                waiting = enterWaiting,
                 fill = Color(0xFFA7DB9B),
                 onDial = onEnterDial,
                 onOpen = onEnterOpen
@@ -434,6 +442,7 @@ private fun GateSectionCard(
                 title = exitTitle,
                 enabled = exitEnabled,
                 loading = exitLoading,
+                waiting = exitWaiting,
                 fill = Color(0xFFA1D0F2),
                 onDial = onExitDial,
                 onOpen = onExitOpen
@@ -447,6 +456,7 @@ private fun GateActionRow(
     title: String,
     enabled: Boolean,
     loading: Boolean,
+    waiting: Boolean,
     fill: Color,
     onDial: () -> Unit,
     onOpen: () -> Unit
@@ -454,6 +464,7 @@ private fun GateActionRow(
     val actionInteractionSource = remember { MutableInteractionSource() }
     val isPressed by actionInteractionSource.collectIsPressedAsState()
     val activeFill = Color(0xFFF5BA69)
+    val currentFill = if (waiting || isPressed) activeFill else fill
 
     Row(horizontalArrangement = Arrangement.spacedBy(14.dp)) {
         Button(
@@ -477,8 +488,10 @@ private fun GateActionRow(
                 .height(88.dp),
             shape = RoundedCornerShape(22.dp),
             colors = ButtonDefaults.buttonColors(
-                containerColor = if (loading || isPressed) activeFill else fill,
-                disabledContainerColor = fill.copy(alpha = 0.55f)
+                containerColor = currentFill,
+                contentColor = Color.White,
+                disabledContainerColor = if (waiting) activeFill else fill.copy(alpha = 0.55f),
+                disabledContentColor = Color.White
             )
         ) {
             Row(
@@ -492,7 +505,7 @@ private fun GateActionRow(
                     fontWeight = FontWeight.Bold,
                     fontSize = 32.sp
                 )
-                if (loading) {
+                if (waiting) {
                     CircularProgressIndicator(
                         modifier = Modifier.size(24.dp),
                         color = Color.White,

@@ -318,6 +318,11 @@ class AppViewModel(
 
     fun isActionInProgress(area: GateArea, direction: GateDirection): Boolean {
         val actionId = GateActionId(area, direction)
+        return _state.value.inFlightAction == actionId
+    }
+
+    fun isActionWaiting(area: GateArea, direction: GateDirection): Boolean {
+        val actionId = GateActionId(area, direction)
         return _state.value.inFlightAction == actionId || actionId in _state.value.cooldownActions
     }
 

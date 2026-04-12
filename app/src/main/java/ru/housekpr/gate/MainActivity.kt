@@ -90,6 +90,7 @@ class MainActivity : FragmentActivity() {
                     buttonTitle = appViewModel::buttonTitle,
                     isActionDisabled = appViewModel::isActionDisabled,
                     isActionInProgress = appViewModel::isActionInProgress,
+                    isActionWaiting = appViewModel::isActionWaiting,
                     onDialFailure = appViewModel::onDialFailure,
                     onLinkOpenFailure = appViewModel::onLinkOpenFailure
                 )
