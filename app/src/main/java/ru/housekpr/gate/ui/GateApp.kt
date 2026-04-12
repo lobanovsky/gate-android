@@ -7,11 +7,13 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -349,33 +351,45 @@ private fun GatesScreen(
         },
         containerColor = Color(0xFFF2F3F7)
     ) { innerPadding ->
-        Column(
+        BoxWithConstraints(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(innerPadding)
                 .padding(20.dp)
-                .verticalScroll(rememberScrollState()),
-            verticalArrangement = Arrangement.spacedBy(24.dp)
         ) {
             if (state.isLoadingDevices && state.sections.isEmpty()) {
                 Box(modifier = Modifier.fillMaxWidth().padding(top = 48.dp)) {
                     CircularProgressIndicator(modifier = Modifier.align(Alignment.Center))
                 }
             } else {
-                state.sections.forEach { section ->
-                    GateSectionCard(
-                        title = section.title,
-                        enterTitle = buttonTitle(section.area, GateDirection.ENTER),
-                        exitTitle = buttonTitle(section.area, GateDirection.EXIT),
-                        enterEnabled = !isActionDisabled(section.area, GateDirection.ENTER, section.actions[GateDirection.ENTER] != null),
-                        exitEnabled = !isActionDisabled(section.area, GateDirection.EXIT, section.actions[GateDirection.EXIT] != null),
-                        enterLoading = isActionInProgress(section.area, GateDirection.ENTER),
-                        exitLoading = isActionInProgress(section.area, GateDirection.EXIT),
-                        onEnterDial = { onDial(section.area, GateDirection.ENTER) },
-                        onExitDial = { onDial(section.area, GateDirection.EXIT) },
-                        onEnterOpen = { onOpenGate(section.area, GateDirection.ENTER) },
-                        onExitOpen = { onOpenGate(section.area, GateDirection.EXIT) }
-                    )
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .heightIn(min = maxHeight)
+                        .verticalScroll(rememberScrollState()),
+                    verticalArrangement = Arrangement.Center,
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ) {
+                    Column(
+                        modifier = Modifier.fillMaxWidth(),
+                        verticalArrangement = Arrangement.spacedBy(48.dp)
+                    ) {
+                        state.sections.forEach { section ->
+                            GateSectionCard(
+                                title = section.title,
+                                enterTitle = buttonTitle(section.area, GateDirection.ENTER),
+                                exitTitle = buttonTitle(section.area, GateDirection.EXIT),
+                                enterEnabled = !isActionDisabled(section.area, GateDirection.ENTER, section.actions[GateDirection.ENTER] != null),
+                                exitEnabled = !isActionDisabled(section.area, GateDirection.EXIT, section.actions[GateDirection.EXIT] != null),
+                                enterLoading = isActionInProgress(section.area, GateDirection.ENTER),
+                                exitLoading = isActionInProgress(section.area, GateDirection.EXIT),
+                                onEnterDial = { onDial(section.area, GateDirection.ENTER) },
+                                onExitDial = { onDial(section.area, GateDirection.EXIT) },
+                                onEnterOpen = { onOpenGate(section.area, GateDirection.ENTER) },
+                                onExitOpen = { onOpenGate(section.area, GateDirection.EXIT) }
+                            )
+                        }
+                    }
                 }
             }
         }
