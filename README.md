@@ -66,7 +66,7 @@ buildConfigField("String", "BACKEND_HOST", "\"gate-backend.housekpr.ru\"")
 
 ## Release и публикация
 
-Для release-подписи используется локальный файл `keystore.properties`, который не должен попадать в git. Возьмите шаблон из `keystore.properties.example` и заполните его параметрами production keystore.
+Проект поддерживает release-подпись через локальный файл `keystore.properties`, который не должен попадать в git. Возьмите шаблон из `keystore.properties.example` и заполните его параметрами production keystore. Если `keystore.properties` отсутствует, release build type останется доступным, но production signing не будет настроен.
 
 Основные команды:
 
@@ -79,3 +79,4 @@ buildConfigField("String", "BACKEND_HOST", "\"gate-backend.housekpr.ru\"")
 
 - [RuStoreReleaseChecklist.md](/Users/evgeny/Projects/android/gate/docs/RuStoreReleaseChecklist.md)
 - [RuStoreMetadataTemplate.md](/Users/evgeny/Projects/android/gate/docs/RuStoreMetadataTemplate.md)
+- [RuStoreAssetsChecklist.md](/Users/evgeny/Projects/android/gate/docs/RuStoreAssetsChecklist.md)
