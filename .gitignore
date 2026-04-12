@@ -34,3 +34,4 @@ captures/
 *.aab
 *.ap_
 output-metadata.json
+*.pem
