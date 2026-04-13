@@ -132,9 +132,9 @@ fun GateApp(
             onOpenStudioLink = {
                 runCatching {
                     context.startActivity(
-                        Intent(
-                            Intent.ACTION_VIEW,
-                            Uri.parse("https://www.lobanovsky.ru")
+                            Intent(
+                                Intent.ACTION_VIEW,
+                            Uri.parse("https://tbank.ru/cf/8ccZXC5ZbA3")
                         )
                     )
                 }.onFailure {
@@ -340,8 +340,10 @@ private fun GatesScreen(
                 title = {
                     TextButton(onClick = onOpenStudioLink) {
                         Text(
-                            "Сделано в Бюро Лобановского",
-                            style = MaterialTheme.typography.labelMedium
+                            "\u2615 Поблагодарить разработчика",
+                            style = MaterialTheme.typography.labelMedium,
+                            color = Color(0xFFFF3B6B),
+                            fontWeight = FontWeight.SemiBold
                         )
                     }
                 },
