@@ -19,11 +19,13 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.collectIsPressedAsState
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowForward
 import androidx.compose.material.icons.filled.Call
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
@@ -51,6 +53,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
@@ -430,6 +433,7 @@ private fun GateSectionCard(
         ) {
             Text(title, style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.SemiBold)
             GateActionRow(
+                direction = GateDirection.ENTER,
                 title = enterTitle,
                 enabled = enterEnabled,
                 loading = enterLoading,
@@ -439,6 +443,7 @@ private fun GateSectionCard(
                 onOpen = onEnterOpen
             )
             GateActionRow(
+                direction = GateDirection.EXIT,
                 title = exitTitle,
                 enabled = exitEnabled,
                 loading = exitLoading,
@@ -453,6 +458,7 @@ private fun GateSectionCard(
 
 @Composable
 private fun GateActionRow(
+    direction: GateDirection,
     title: String,
     enabled: Boolean,
     loading: Boolean,
@@ -503,7 +509,7 @@ private fun GateActionRow(
                     title,
                     color = Color.White,
                     fontWeight = FontWeight.Bold,
-                    fontSize = 32.sp
+                    fontSize = 27.sp
                 )
                 if (waiting) {
                     CircularProgressIndicator(
@@ -512,10 +518,37 @@ private fun GateActionRow(
                         strokeWidth = 2.dp
                     )
                 } else {
-                    Text("➜", color = Color.White)
+                    GateDirectionIcon(direction = direction, fill = fill)
                 }
             }
         }
+    }
+}
+
+@Composable
+private fun GateDirectionIcon(
+    direction: GateDirection,
+    fill: Color
+) {
+    val rotation = when (direction) {
+        GateDirection.ENTER -> 45f
+        GateDirection.EXIT -> -45f
+    }
+
+    Box(
+        modifier = Modifier
+            .size(38.dp)
+            .background(color = Color.White, shape = CircleShape),
+        contentAlignment = Alignment.Center
+    ) {
+        androidx.compose.material3.Icon(
+            imageVector = Icons.AutoMirrored.Filled.ArrowForward,
+            contentDescription = null,
+            tint = fill,
+            modifier = Modifier
+                .size(22.dp)
+                .rotate(rotation)
+        )
     }
 }
 
