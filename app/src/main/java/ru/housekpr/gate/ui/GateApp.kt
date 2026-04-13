@@ -14,6 +14,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -52,6 +53,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.text.font.FontWeight
@@ -479,10 +481,11 @@ private fun GateActionRow(
             shape = RoundedCornerShape(22.dp),
             colors = ButtonDefaults.buttonColors(containerColor = fill)
         ) {
-            androidx.compose.material3.Icon(
+            ThickIcon(
                 imageVector = Icons.Filled.Call,
                 contentDescription = "Позвонить",
-                tint = Color.White
+                tint = Color.White,
+                size = 32.dp
             )
         }
         Button(
@@ -541,14 +544,47 @@ private fun GateDirectionIcon(
             .background(color = Color.White, shape = CircleShape),
         contentAlignment = Alignment.Center
     ) {
-        androidx.compose.material3.Icon(
+        ThickIcon(
             imageVector = Icons.AutoMirrored.Filled.ArrowForward,
             contentDescription = null,
             tint = fill,
+            size = 27.dp,
             modifier = Modifier
-                .size(22.dp)
                 .rotate(rotation)
         )
+    }
+}
+
+@Composable
+private fun ThickIcon(
+    imageVector: ImageVector,
+    contentDescription: String?,
+    tint: Color,
+    size: androidx.compose.ui.unit.Dp,
+    modifier: Modifier = Modifier
+) {
+    val offsets = listOf(
+        0.dp to 0.dp,
+        (-0.7).dp to 0.dp,
+        0.7.dp to 0.dp,
+        0.dp to (-0.7).dp,
+        0.dp to 0.7.dp
+    )
+
+    Box(
+        modifier = modifier.size(size),
+        contentAlignment = Alignment.Center
+    ) {
+        offsets.forEach { (x, y) ->
+            androidx.compose.material3.Icon(
+                imageVector = imageVector,
+                contentDescription = contentDescription,
+                tint = tint,
+                modifier = Modifier
+                    .offset(x = x, y = y)
+                    .size(size)
+            )
+        }
     }
 }
 
