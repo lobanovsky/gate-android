@@ -65,13 +65,13 @@ class AppViewModel(
             storage.loadSession()
         }.onSuccess { savedSession ->
             savedSession?.let {
-                Log.d(TAG, "Bootstrap restored saved session")
+                logDebug("Bootstrap restored saved session")
                 session = it
                 _state.update { state -> state.copy(isAuthenticated = true) }
                 loadDevices()
             }
         }.onFailure { error ->
-            Log.e(TAG, "Bootstrap failed while reading stored session", error)
+            logError("Bootstrap failed while reading stored session", error)
             present(error, "Не удалось восстановить сессию")
         }
     }
@@ -80,23 +80,23 @@ class AppViewModel(
         if (email.isBlank() || password.isBlank()) return
         launchBusy {
             runCatching {
-                Log.d(TAG, "Login started for ${email.trim()}")
+                logDebug("Login started for ${email.trim()}")
                 api.login(Credentials(email.trim(), password))
             }.onSuccess { userSession ->
-                Log.d(TAG, "Backend login succeeded for ${email.trim()}")
+                logDebug("Backend login succeeded for ${email.trim()}")
                 runCatching {
                     applySession(userSession)
-                    Log.d(TAG, "Session persisted successfully")
+                    logDebug("Session persisted successfully")
                     storage.saveCredentials(Credentials(email.trim(), password))
-                    Log.d(TAG, "Credentials persisted successfully")
+                    logDebug("Credentials persisted successfully")
                     refreshBiometricOption()
                     loadDevices()
                 }.onFailure { error ->
-                    Log.e(TAG, "Login post-processing failed", error)
+                    logError("Login post-processing failed", error)
                     present(error, "Не удалось завершить вход")
                 }
             }.onFailure { error ->
-                Log.e(TAG, "Login failed before session persistence", error)
+                logError("Login failed before session persistence", error)
                 present(error, "Не удалось войти")
             }
         }
@@ -145,7 +145,7 @@ class AppViewModel(
     fun loginWithStoredCredentials() {
         val credentials = runCatching { storage.loadCredentials() }
             .onFailure { error ->
-                Log.e(TAG, "Biometric login failed while loading saved credentials", error)
+                logError("Biometric login failed while loading saved credentials", error)
                 present(error, "Не удалось войти по биометрии")
                 refreshBiometricOption()
             }
@@ -159,7 +159,7 @@ class AppViewModel(
                     applySession(userSession)
                     loadDevices()
                 }.onFailure { error ->
-                    Log.e(TAG, "Biometric login post-processing failed", error)
+                    logError("Biometric login post-processing failed", error)
                     present(error, "Не удалось завершить вход")
                 }
             }.onFailure { error ->
@@ -358,8 +358,7 @@ class AppViewModel(
     }
 
     private fun present(error: Throwable, title: String) {
-        Log.e(
-            TAG,
+        logError(
             "Presenting error. title=$title type=${error::class.java.name} message=${error.message} cause=${error.cause?.message}",
             error
         )
@@ -386,6 +385,14 @@ class AppViewModel(
                 _state.update { it.copy(isBusy = false) }
             }
         }
+    }
+
+    private fun logDebug(message: String) {
+        runCatching { Log.d(TAG, message) }
+    }
+
+    private fun logError(message: String, error: Throwable) {
+        runCatching { Log.e(TAG, message, error) }
     }
 
     companion object {

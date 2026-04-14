@@ -65,6 +65,7 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.unit.dp
 import ru.housekpr.gate.AppUiState
@@ -75,6 +76,49 @@ private enum class AuthScreenMode {
     LOGIN,
     REGISTER,
     RESET_PASSWORD
+}
+
+private data class GatesScreenMetrics(
+    val contentPadding: Dp,
+    val sectionSpacing: Dp,
+    val cardPadding: Dp,
+    val cardSpacing: Dp,
+    val actionButtonSize: Dp,
+    val actionSpacing: Dp,
+    val actionTitleSize: Int,
+    val actionIconSize: Dp,
+    val directionBadgeSize: Dp,
+    val directionIconSize: Dp
+)
+
+private fun gatesScreenMetrics(maxHeight: Dp): GatesScreenMetrics {
+    return if (maxHeight <= 700.dp) {
+        GatesScreenMetrics(
+            contentPadding = 14.dp,
+            sectionSpacing = 28.dp,
+            cardPadding = 14.dp,
+            cardSpacing = 14.dp,
+            actionButtonSize = 76.dp,
+            actionSpacing = 12.dp,
+            actionTitleSize = 22,
+            actionIconSize = 28.dp,
+            directionBadgeSize = 34.dp,
+            directionIconSize = 24.dp
+        )
+    } else {
+        GatesScreenMetrics(
+            contentPadding = 20.dp,
+            sectionSpacing = 48.dp,
+            cardPadding = 18.dp,
+            cardSpacing = 18.dp,
+            actionButtonSize = 88.dp,
+            actionSpacing = 14.dp,
+            actionTitleSize = 27,
+            actionIconSize = 32.dp,
+            directionBadgeSize = 38.dp,
+            directionIconSize = 27.dp
+        )
+    }
 }
 
 @Composable
@@ -375,28 +419,39 @@ private fun GatesScreen(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(innerPadding)
-                .padding(20.dp)
         ) {
+            val metrics = gatesScreenMetrics(maxHeight)
+
             if (state.isLoadingDevices && state.sections.isEmpty()) {
-                Box(modifier = Modifier.fillMaxWidth().padding(top = 48.dp)) {
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(
+                            start = metrics.contentPadding,
+                            top = 48.dp,
+                            end = metrics.contentPadding
+                        )
+                ) {
                     CircularProgressIndicator(modifier = Modifier.align(Alignment.Center))
                 }
             } else {
                 Column(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .heightIn(min = maxHeight)
+                        .padding(horizontal = metrics.contentPadding)
+                        .heightIn(min = maxHeight - (metrics.contentPadding * 2))
                         .verticalScroll(rememberScrollState()),
                     verticalArrangement = Arrangement.Center,
                     horizontalAlignment = Alignment.CenterHorizontally
                 ) {
                     Column(
                         modifier = Modifier.fillMaxWidth(),
-                        verticalArrangement = Arrangement.spacedBy(48.dp)
+                        verticalArrangement = Arrangement.spacedBy(metrics.sectionSpacing)
                     ) {
                         state.sections.forEach { section ->
                             GateSectionCard(
                                 title = section.title,
+                                metrics = metrics,
                                 enterTitle = buttonTitle(section.area, GateDirection.ENTER),
                                 exitTitle = buttonTitle(section.area, GateDirection.EXIT),
                                 enterEnabled = !isActionDisabled(section.area, GateDirection.ENTER, section.actions[GateDirection.ENTER] != null),
@@ -421,6 +476,7 @@ private fun GatesScreen(
 @Composable
 private fun GateSectionCard(
     title: String,
+    metrics: GatesScreenMetrics,
     enterTitle: String,
     exitTitle: String,
     enterEnabled: Boolean,
@@ -442,12 +498,13 @@ private fun GateSectionCard(
         Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(18.dp),
-            verticalArrangement = Arrangement.spacedBy(18.dp)
+                .padding(metrics.cardPadding),
+            verticalArrangement = Arrangement.spacedBy(metrics.cardSpacing)
         ) {
             Text(title, style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.SemiBold)
             GateActionRow(
                 direction = GateDirection.ENTER,
+                metrics = metrics,
                 title = enterTitle,
                 enabled = enterEnabled,
                 loading = enterLoading,
@@ -458,6 +515,7 @@ private fun GateSectionCard(
             )
             GateActionRow(
                 direction = GateDirection.EXIT,
+                metrics = metrics,
                 title = exitTitle,
                 enabled = exitEnabled,
                 loading = exitLoading,
@@ -473,6 +531,7 @@ private fun GateSectionCard(
 @Composable
 private fun GateActionRow(
     direction: GateDirection,
+    metrics: GatesScreenMetrics,
     title: String,
     enabled: Boolean,
     loading: Boolean,
@@ -486,10 +545,10 @@ private fun GateActionRow(
     val activeFill = Color(0xFFF5BA69)
     val currentFill = if (waiting || isPressed) activeFill else fill
 
-    Row(horizontalArrangement = Arrangement.spacedBy(14.dp)) {
+    Row(horizontalArrangement = Arrangement.spacedBy(metrics.actionSpacing)) {
         Button(
             onClick = onDial,
-            modifier = Modifier.size(88.dp),
+            modifier = Modifier.size(metrics.actionButtonSize),
             shape = RoundedCornerShape(22.dp),
             colors = ButtonDefaults.buttonColors(containerColor = fill)
         ) {
@@ -497,7 +556,7 @@ private fun GateActionRow(
                 imageVector = Icons.Filled.Call,
                 contentDescription = "Позвонить",
                 tint = Color.White,
-                size = 32.dp
+                size = metrics.actionIconSize
             )
         }
         Button(
@@ -506,7 +565,7 @@ private fun GateActionRow(
             interactionSource = actionInteractionSource,
             modifier = Modifier
                 .weight(1f)
-                .height(88.dp),
+                .height(metrics.actionButtonSize),
             shape = RoundedCornerShape(22.dp),
             colors = ButtonDefaults.buttonColors(
                 containerColor = currentFill,
@@ -524,7 +583,7 @@ private fun GateActionRow(
                     title,
                     color = Color.White,
                     fontWeight = FontWeight.Bold,
-                    fontSize = 27.sp
+                    fontSize = metrics.actionTitleSize.sp
                 )
                 if (waiting) {
                     CircularProgressIndicator(
@@ -533,7 +592,12 @@ private fun GateActionRow(
                         strokeWidth = 2.dp
                     )
                 } else {
-                    GateDirectionIcon(direction = direction, fill = fill)
+                    GateDirectionIcon(
+                        direction = direction,
+                        fill = fill,
+                        badgeSize = metrics.directionBadgeSize,
+                        iconSize = metrics.directionIconSize
+                    )
                 }
             }
         }
@@ -543,7 +607,9 @@ private fun GateActionRow(
 @Composable
 private fun GateDirectionIcon(
     direction: GateDirection,
-    fill: Color
+    fill: Color,
+    badgeSize: Dp,
+    iconSize: Dp
 ) {
     val rotation = when (direction) {
         GateDirection.ENTER -> 45f
@@ -552,7 +618,7 @@ private fun GateDirectionIcon(
 
     Box(
         modifier = Modifier
-            .size(38.dp)
+            .size(badgeSize)
             .background(color = Color.White, shape = CircleShape),
         contentAlignment = Alignment.Center
     ) {
@@ -560,7 +626,7 @@ private fun GateDirectionIcon(
             imageVector = Icons.AutoMirrored.Filled.ArrowForward,
             contentDescription = null,
             tint = fill,
-            size = 27.dp,
+            size = iconSize,
             modifier = Modifier
                 .rotate(rotation)
         )

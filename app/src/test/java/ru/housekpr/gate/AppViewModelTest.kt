@@ -80,7 +80,7 @@ class AppViewModelTest {
         viewModel.bootstrap()
         dispatcher.scheduler.advanceUntilIdle()
         viewModel.openGate(GateArea.COURTYARD, GateDirection.ENTER)
-        dispatcher.scheduler.advanceUntilIdle()
+        dispatcher.scheduler.runCurrent()
 
         assertTrue(viewModel.state.value.cooldownActions.isNotEmpty())
         advanceTimeBy(2_001)
