@@ -28,7 +28,10 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowForward
 import androidx.compose.material.icons.automirrored.filled.Logout
+import androidx.compose.material.icons.filled.BrightnessAuto
 import androidx.compose.material.icons.filled.Call
+import androidx.compose.material.icons.filled.DarkMode
+import androidx.compose.material.icons.filled.LightMode
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
@@ -37,6 +40,8 @@ import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CenterAlignedTopAppBar
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -58,6 +63,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.text.font.FontWeight
@@ -69,6 +75,7 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.unit.dp
 import ru.housekpr.gate.AppUiState
+import ru.housekpr.gate.models.AppThemeMode
 import ru.housekpr.gate.models.GateArea
 import ru.housekpr.gate.models.GateDirection
 
@@ -133,6 +140,7 @@ fun GateApp(
     onOpenGate: (GateArea, GateDirection) -> Unit,
     onDial: (GateArea, GateDirection) -> Intent,
     onLogout: () -> Unit,
+    onThemeModeChange: (AppThemeMode) -> Unit,
     buttonTitle: (GateArea, GateDirection) -> String,
     isActionDisabled: (GateArea, GateDirection, Boolean) -> Boolean,
     isActionInProgress: (GateArea, GateDirection) -> Boolean,
@@ -160,6 +168,8 @@ fun GateApp(
             state = state,
             onRefresh = onRefresh,
             onOpenGate = onOpenGate,
+            themeMode = state.themeMode,
+            onThemeModeChange = onThemeModeChange,
             buttonTitle = buttonTitle,
             isActionDisabled = isActionDisabled,
             isActionInProgress = isActionInProgress,
@@ -220,7 +230,10 @@ private fun LoginScreen(
             .fillMaxSize()
             .background(
                 Brush.linearGradient(
-                    listOf(Color(0xFFF1F7FF), Color(0xFFE6EFFA))
+                    listOf(
+                        MaterialTheme.colorScheme.background,
+                        MaterialTheme.colorScheme.secondaryContainer
+                    )
                 )
             )
             .padding(24.dp)
@@ -367,6 +380,8 @@ private fun GatesScreen(
     state: AppUiState,
     onRefresh: () -> Unit,
     onOpenGate: (GateArea, GateDirection) -> Unit,
+    themeMode: AppThemeMode,
+    onThemeModeChange: (AppThemeMode) -> Unit,
     buttonTitle: (GateArea, GateDirection) -> String,
     isActionDisabled: (GateArea, GateDirection, Boolean) -> Boolean,
     isActionInProgress: (GateArea, GateDirection) -> Boolean,
@@ -386,7 +401,7 @@ private fun GatesScreen(
                         Text(
                             "\u2615 Поблагодарить разработчика",
                             style = MaterialTheme.typography.labelMedium,
-                            color = Color(0xFFFF3B6B),
+                            color = MaterialTheme.colorScheme.tertiary,
                             fontWeight = FontWeight.SemiBold
                         )
                     }
@@ -400,6 +415,10 @@ private fun GatesScreen(
                     }
                 },
                 actions = {
+                    ThemeModeMenu(
+                        themeMode = themeMode,
+                        onThemeModeChange = onThemeModeChange
+                    )
                     IconButton(onClick = onRefresh, enabled = !state.isBusy) {
                         if (state.isLoadingDevices) {
                             CircularProgressIndicator(modifier = Modifier.size(18.dp), strokeWidth = 2.dp)
@@ -413,7 +432,7 @@ private fun GatesScreen(
                 }
             )
         },
-        containerColor = Color(0xFFF2F3F7)
+        containerColor = MaterialTheme.colorScheme.background
     ) { innerPadding ->
         BoxWithConstraints(
             modifier = Modifier
@@ -490,8 +509,10 @@ private fun GateSectionCard(
     onEnterOpen: () -> Unit,
     onExitOpen: () -> Unit
 ) {
+    val isDarkPalette = MaterialTheme.colorScheme.background.luminance() < 0.5f
+
     Card(
-        colors = CardDefaults.cardColors(containerColor = Color.White),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
         shape = RoundedCornerShape(24.dp),
         elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
     ) {
@@ -509,7 +530,7 @@ private fun GateSectionCard(
                 enabled = enterEnabled,
                 loading = enterLoading,
                 waiting = enterWaiting,
-                fill = Color(0xFFA7DB9B),
+                fill = if (isDarkPalette) Color(0xFF4E8C5B) else Color(0xFFA7DB9B),
                 onDial = onEnterDial,
                 onOpen = onEnterOpen
             )
@@ -520,11 +541,84 @@ private fun GateSectionCard(
                 enabled = exitEnabled,
                 loading = exitLoading,
                 waiting = exitWaiting,
-                fill = Color(0xFFA1D0F2),
+                fill = if (isDarkPalette) Color(0xFF386A8A) else Color(0xFFA1D0F2),
                 onDial = onExitDial,
                 onOpen = onExitOpen
             )
         }
+    }
+}
+
+@Composable
+private fun ThemeModeMenu(
+    themeMode: AppThemeMode,
+    onThemeModeChange: (AppThemeMode) -> Unit
+) {
+    var isExpanded by remember { mutableStateOf(false) }
+    val icon = when (themeMode) {
+        AppThemeMode.SYSTEM -> Icons.Filled.BrightnessAuto
+        AppThemeMode.LIGHT -> Icons.Filled.LightMode
+        AppThemeMode.DARK -> Icons.Filled.DarkMode
+    }
+    val currentModeLabel = when (themeMode) {
+        AppThemeMode.SYSTEM -> "Системная тема"
+        AppThemeMode.LIGHT -> "Светлая тема"
+        AppThemeMode.DARK -> "Тёмная тема"
+    }
+
+    Box {
+        IconButton(
+            onClick = { isExpanded = true }
+        ) {
+            Icon(
+                imageVector = icon,
+                contentDescription = currentModeLabel,
+                tint = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+        }
+        DropdownMenu(
+            expanded = isExpanded,
+            onDismissRequest = { isExpanded = false }
+        ) {
+            AppThemeMode.entries.forEach { option ->
+                DropdownMenuItem(
+                    text = {
+                        Text(
+                            buildString {
+                                append(option.label())
+                                if (option == themeMode) append(" •")
+                            }
+                        )
+                    },
+                    leadingIcon = {
+                        Icon(
+                            imageVector = option.icon(),
+                            contentDescription = null
+                        )
+                    },
+                    onClick = {
+                        isExpanded = false
+                        onThemeModeChange(option)
+                    }
+                )
+            }
+        }
+    }
+}
+
+private fun AppThemeMode.label(): String {
+    return when (this) {
+        AppThemeMode.SYSTEM -> "Системная"
+        AppThemeMode.LIGHT -> "Светлая"
+        AppThemeMode.DARK -> "Тёмная"
+    }
+}
+
+private fun AppThemeMode.icon(): ImageVector {
+    return when (this) {
+        AppThemeMode.SYSTEM -> Icons.Filled.BrightnessAuto
+        AppThemeMode.LIGHT -> Icons.Filled.LightMode
+        AppThemeMode.DARK -> Icons.Filled.DarkMode
     }
 }
 
@@ -619,7 +713,7 @@ private fun GateDirectionIcon(
     Box(
         modifier = Modifier
             .size(badgeSize)
-            .background(color = Color.White, shape = CircleShape),
+            .background(color = MaterialTheme.colorScheme.surfaceVariant, shape = CircleShape),
         contentAlignment = Alignment.Center
     ) {
         ThickIcon(

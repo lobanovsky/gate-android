@@ -14,6 +14,7 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import ru.housekpr.gate.models.ApiError
 import ru.housekpr.gate.models.AppAlert
+import ru.housekpr.gate.models.AppThemeMode
 import ru.housekpr.gate.models.BiometricOption
 import ru.housekpr.gate.models.Credentials
 import ru.housekpr.gate.models.GateActionId
@@ -35,6 +36,7 @@ data class AppUiState(
     val isBusy: Boolean = false,
     val isLoadingDevices: Boolean = false,
     val isAuthenticated: Boolean = false,
+    val themeMode: AppThemeMode = AppThemeMode.SYSTEM,
     val sections: List<GateSection> = emptyList(),
     val biometricOption: BiometricOption? = null,
     val alert: AppAlert? = null,
@@ -51,6 +53,7 @@ class AppViewModel(
 
     private val _state = MutableStateFlow(
         AppUiState(
+            themeMode = loadInitialThemeMode(),
             biometricOption = biometricSupport.currentOption(storage.hasCredentials())
         )
     )
@@ -294,6 +297,19 @@ class AppViewModel(
         _state.update { it.copy(alert = null) }
     }
 
+    fun setThemeMode(themeMode: AppThemeMode) {
+        if (_state.value.themeMode == themeMode) return
+
+        runCatching {
+            storage.saveThemeMode(themeMode)
+        }.onSuccess {
+            _state.update { it.copy(themeMode = themeMode) }
+        }.onFailure { error ->
+            logError("Failed to persist theme mode", error)
+            present(error, "Не удалось изменить тему")
+        }
+    }
+
     fun buttonTitle(area: GateArea, direction: GateDirection): String {
         val actionId = GateActionId(area, direction)
         return if (
@@ -338,6 +354,14 @@ class AppViewModel(
                 biometricOption = biometricSupport.currentOption(storage.hasCredentials())
             )
         }
+    }
+
+    private fun loadInitialThemeMode(): AppThemeMode {
+        return runCatching {
+            storage.loadThemeMode()
+        }.onFailure { error ->
+            logError("Failed to load theme mode", error)
+        }.getOrNull() ?: AppThemeMode.SYSTEM
     }
 
     private fun handleAuthorizedError(error: Throwable, fallbackTitle: String) {
@@ -405,7 +429,7 @@ class AppViewModel(
                     return AppViewModel(
                         api = dependencies.api,
                         storage = dependencies.storage,
-                        biometricSupport = dependencies.biometricSupport
+                        biometricSupport = dependencies.biometricSupport,
                     ) as T
                 }
             }

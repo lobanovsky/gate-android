@@ -135,6 +135,12 @@ data class BiometricOption(
     val reason: String
 )
 
+enum class AppThemeMode {
+    SYSTEM,
+    LIGHT,
+    DARK
+}
+
 sealed class ApiError(message: String? = null) : Exception(message) {
     data object InvalidBaseUrl : ApiError()
     data object InvalidResponse : ApiError()

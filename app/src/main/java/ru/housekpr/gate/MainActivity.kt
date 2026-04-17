@@ -24,17 +24,17 @@ class MainActivity : FragmentActivity() {
         val dependencies = AppDependencies.from(applicationContext)
 
         setContent {
-            GateTheme {
-                val appViewModel: AppViewModel = viewModel(
-                    factory = AppViewModel.factory(dependencies)
-                )
-                val state by appViewModel.state.collectAsStateWithLifecycle()
-                val context = LocalContext.current
+            val appViewModel: AppViewModel = viewModel(
+                factory = AppViewModel.factory(dependencies)
+            )
+            val state by appViewModel.state.collectAsStateWithLifecycle()
+            val context = LocalContext.current
 
-                LaunchedEffect(Unit) {
-                    appViewModel.bootstrap()
-                }
+            LaunchedEffect(Unit) {
+                appViewModel.bootstrap()
+            }
 
+            GateTheme(themeMode = state.themeMode) {
                 GateApp(
                     state = state,
                     onDismissAlert = appViewModel::dismissAlert,
@@ -87,6 +87,7 @@ class MainActivity : FragmentActivity() {
                     onOpenGate = appViewModel::openGate,
                     onDial = appViewModel::dialGate,
                     onLogout = appViewModel::logout,
+                    onThemeModeChange = appViewModel::setThemeMode,
                     buttonTitle = appViewModel::buttonTitle,
                     isActionDisabled = appViewModel::isActionDisabled,
                     isActionInProgress = appViewModel::isActionInProgress,

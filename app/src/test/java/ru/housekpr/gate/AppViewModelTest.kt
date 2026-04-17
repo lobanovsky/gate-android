@@ -10,6 +10,7 @@ import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Test
 import ru.housekpr.gate.models.ApiError
+import ru.housekpr.gate.models.AppThemeMode
 import ru.housekpr.gate.models.BiometricOption
 import ru.housekpr.gate.models.Credentials
 import ru.housekpr.gate.models.Device
@@ -34,7 +35,12 @@ class AppViewModelTest {
     fun bootstrapLoadsSavedSessionAndDevices() = runTest(dispatcher) {
         val storage = FakeStorage().apply { saveSession(sampleSession()) }
         val api = FakeApi(devices = sampleDevices())
-        val viewModel = AppViewModel(api, storage, FakeBiometricSupport(), dispatcher)
+        val viewModel = AppViewModel(
+            api,
+            storage,
+            FakeBiometricSupport(),
+            dispatcher
+        )
 
         viewModel.bootstrap()
         dispatcher.scheduler.advanceUntilIdle()
@@ -47,7 +53,12 @@ class AppViewModelTest {
     fun loginStoresCredentialsAndLoadsDevices() = runTest(dispatcher) {
         val storage = FakeStorage()
         val api = FakeApi(devices = sampleDevices())
-        val viewModel = AppViewModel(api, storage, FakeBiometricSupport(), dispatcher)
+        val viewModel = AppViewModel(
+            api,
+            storage,
+            FakeBiometricSupport(),
+            dispatcher
+        )
 
         viewModel.login("test@example.com", "secret")
         dispatcher.scheduler.advanceUntilIdle()
@@ -61,7 +72,12 @@ class AppViewModelTest {
     fun logoutClearsAuthenticatedState() = runTest(dispatcher) {
         val storage = FakeStorage().apply { saveSession(sampleSession()) }
         val api = FakeApi(devices = sampleDevices())
-        val viewModel = AppViewModel(api, storage, FakeBiometricSupport(), dispatcher)
+        val viewModel = AppViewModel(
+            api,
+            storage,
+            FakeBiometricSupport(),
+            dispatcher
+        )
 
         viewModel.bootstrap()
         dispatcher.scheduler.advanceUntilIdle()
@@ -75,7 +91,12 @@ class AppViewModelTest {
     fun openGateAddsAndRemovesCooldown() = runTest(dispatcher) {
         val storage = FakeStorage().apply { saveSession(sampleSession()) }
         val api = FakeApi(devices = sampleDevices())
-        val viewModel = AppViewModel(api, storage, FakeBiometricSupport(), dispatcher)
+        val viewModel = AppViewModel(
+            api,
+            storage,
+            FakeBiometricSupport(),
+            dispatcher
+        )
 
         viewModel.bootstrap()
         dispatcher.scheduler.advanceUntilIdle()
@@ -92,13 +113,95 @@ class AppViewModelTest {
     fun unauthorizedDevicesRequestLogsOutUser() = runTest(dispatcher) {
         val storage = FakeStorage().apply { saveSession(sampleSession()) }
         val api = FakeApi(fetchDevicesError = ApiError.Unauthorized)
-        val viewModel = AppViewModel(api, storage, FakeBiometricSupport(), dispatcher)
+        val viewModel = AppViewModel(
+            api,
+            storage,
+            FakeBiometricSupport(),
+            dispatcher
+        )
 
         viewModel.bootstrap()
         dispatcher.scheduler.advanceUntilIdle()
 
         assertFalse(viewModel.state.value.isAuthenticated)
         assertEquals("Сессия истекла", viewModel.state.value.alert?.title)
+    }
+
+    @Test
+    fun usesSystemThemeModeWhenNothingWasSaved() = runTest(dispatcher) {
+        val viewModel = AppViewModel(
+            FakeApi(),
+            FakeStorage(),
+            FakeBiometricSupport(),
+            dispatcher
+        )
+
+        assertEquals(AppThemeMode.SYSTEM, viewModel.state.value.themeMode)
+    }
+
+    @Test
+    fun usesSavedThemeModeWhenAvailable() = runTest(dispatcher) {
+        val storage = FakeStorage().apply { saveThemeMode(AppThemeMode.DARK) }
+        val viewModel = AppViewModel(
+            FakeApi(),
+            storage,
+            FakeBiometricSupport(),
+            dispatcher
+        )
+
+        assertEquals(AppThemeMode.DARK, viewModel.state.value.themeMode)
+    }
+
+    @Test
+    fun setThemeModePersistsSelection() = runTest(dispatcher) {
+        val storage = FakeStorage()
+        val viewModel = AppViewModel(
+            FakeApi(),
+            storage,
+            FakeBiometricSupport(),
+            dispatcher
+        )
+
+        viewModel.setThemeMode(AppThemeMode.DARK)
+
+        assertEquals(AppThemeMode.DARK, viewModel.state.value.themeMode)
+        assertEquals(AppThemeMode.DARK, storage.loadThemeMode())
+    }
+
+    @Test
+    fun setSystemThemeModePersistsSelection() = runTest(dispatcher) {
+        val storage = FakeStorage().apply { saveThemeMode(AppThemeMode.DARK) }
+        val viewModel = AppViewModel(
+            FakeApi(),
+            storage,
+            FakeBiometricSupport(),
+            dispatcher
+        )
+
+        viewModel.setThemeMode(AppThemeMode.SYSTEM)
+
+        assertEquals(AppThemeMode.SYSTEM, viewModel.state.value.themeMode)
+        assertEquals(AppThemeMode.SYSTEM, storage.loadThemeMode())
+    }
+
+    @Test
+    fun logoutKeepsThemeModeSelection() = runTest(dispatcher) {
+        val storage = FakeStorage().apply {
+            saveSession(sampleSession())
+            saveThemeMode(AppThemeMode.SYSTEM)
+        }
+        val viewModel = AppViewModel(
+            FakeApi(devices = sampleDevices()),
+            storage,
+            FakeBiometricSupport(),
+            dispatcher
+        )
+
+        viewModel.bootstrap()
+        dispatcher.scheduler.advanceUntilIdle()
+        viewModel.logout()
+
+        assertEquals(AppThemeMode.SYSTEM, viewModel.state.value.themeMode)
     }
 }
 
@@ -121,6 +224,7 @@ private class FakeApi(
 private class FakeStorage : SecureStorage {
     private var session: UserSession? = null
     private var credentials: Credentials? = null
+    private var themeMode: AppThemeMode? = null
 
     override fun loadSession(): UserSession? = session
     override fun saveSession(session: UserSession) { this.session = session }
@@ -128,6 +232,8 @@ private class FakeStorage : SecureStorage {
     override fun saveCredentials(credentials: Credentials) { this.credentials = credentials }
     override fun loadCredentials(): Credentials? = credentials
     override fun hasCredentials(): Boolean = credentials != null
+    override fun loadThemeMode(): AppThemeMode? = themeMode
+    override fun saveThemeMode(themeMode: AppThemeMode) { this.themeMode = themeMode }
 }
 
 private class FakeBiometricSupport : BiometricSupport {

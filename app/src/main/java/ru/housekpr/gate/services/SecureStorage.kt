@@ -6,6 +6,7 @@ import androidx.security.crypto.EncryptedSharedPreferences
 import androidx.security.crypto.MasterKey
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
+import ru.housekpr.gate.models.AppThemeMode
 import ru.housekpr.gate.models.Credentials
 import ru.housekpr.gate.models.UserSession
 
@@ -16,6 +17,8 @@ interface SecureStorage {
     fun saveCredentials(credentials: Credentials)
     fun loadCredentials(): Credentials?
     fun hasCredentials(): Boolean
+    fun loadThemeMode(): AppThemeMode?
+    fun saveThemeMode(themeMode: AppThemeMode)
 }
 
 class StorageError(
@@ -122,9 +125,36 @@ class SecurePrefsStorage(
         }
     }
 
+    override fun loadThemeMode(): AppThemeMode? {
+        return try {
+            prefs.getString(KEY_THEME_MODE, null)?.let(AppThemeMode::valueOf)
+        } catch (error: Throwable) {
+            Log.e(TAG, "Failed to load theme mode", error)
+            throw StorageError(
+                operation = "loadThemeMode",
+                message = "Не удалось прочитать сохранённую тему.",
+                cause = error
+            )
+        }
+    }
+
+    override fun saveThemeMode(themeMode: AppThemeMode) {
+        try {
+            prefs.edit().putString(KEY_THEME_MODE, themeMode.name).apply()
+        } catch (error: Throwable) {
+            Log.e(TAG, "Failed to save theme mode", error)
+            throw StorageError(
+                operation = "saveThemeMode",
+                message = "Не удалось сохранить выбранную тему.",
+                cause = error
+            )
+        }
+    }
+
     private companion object {
         const val TAG = "SecureStorage"
         const val KEY_SESSION = "gate.user.session"
         const val KEY_CREDENTIALS = "gate.user.credentials"
+        const val KEY_THEME_MODE = "gate.app.theme_mode"
     }
 }
