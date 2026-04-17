@@ -15,6 +15,7 @@ androidxJunit = "1.2.1"
 espresso = "3.6.1"
 coroutinesTest = "1.8.1"
 material = "1.12.0"
+myTarget = "5.45.3"
 
 [libraries]
 androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "coreKtx" }
@@ -40,6 +41,7 @@ squareup-okhttp-logging = { group = "com.squareup.okhttp3", name = "logging-inte
 androidx-biometric = { group = "androidx.biometric", name = "biometric", version.ref = "biometric" }
 androidx-security-crypto = { group = "androidx.security", name = "security-crypto", version.ref = "securityCrypto" }
 google-material = { group = "com.google.android.material", name = "material", version.ref = "material" }
+mytarget-sdk = { group = "com.my.target", name = "mytarget-sdk", version.ref = "myTarget" }
 junit4 = { group = "junit", name = "junit", version.ref = "junit4" }
 androidx-junit = { group = "androidx.test.ext", name = "junit", version.ref = "androidxJunit" }
 androidx-espresso-core = { group = "androidx.test.espresso", name = "espresso-core", version.ref = "espresso" }

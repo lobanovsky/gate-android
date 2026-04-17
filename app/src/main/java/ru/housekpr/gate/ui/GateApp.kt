@@ -466,6 +466,10 @@ private fun GatesScreen(
                                 onExitOpen = { onOpenGate(section.area, GateDirection.EXIT) }
                             )
                         }
+
+                        VkBanner300x250(
+                            modifier = Modifier.align(Alignment.CenterHorizontally)
+                        )
                     }
                 }
             }
