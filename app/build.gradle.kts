@@ -23,14 +23,13 @@ android {
         applicationId = "ru.housekpr.gate"
         minSdk = 28
         targetSdk = 35
-        versionCode = 6
-        versionName = "1.0.6"
+        versionCode = 5
+        versionName = "1.0.5"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         vectorDrawables.useSupportLibrary = true
 
         buildConfigField("String", "BACKEND_HOST", "\"gate-backend.housekpr.ru\"")
-        buildConfigField("long", "VK_ADS_BANNER_SLOT_ID", "1999161L")
     }
 
     signingConfigs {
@@ -49,11 +48,9 @@ android {
     buildTypes {
         debug {
             applicationIdSuffix = ".debug"
-            buildConfigField("boolean", "VK_ADS_ENABLED", "false")
         }
         release {
             isMinifyEnabled = false
-            buildConfigField("boolean", "VK_ADS_ENABLED", "true")
             if (keystorePropertiesFile.exists()) {
                 signingConfig = signingConfigs.getByName("release")
             }
@@ -107,7 +104,6 @@ dependencies {
     implementation(libs.squareup.okhttp.logging)
     implementation(libs.androidx.biometric)
     implementation(libs.androidx.security.crypto)
-    implementation(libs.mytarget.sdk)
 
     testImplementation(libs.junit4)
     testImplementation(libs.org.jetbrains.kotlinx.coroutines.test)
